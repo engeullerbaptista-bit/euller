@@ -583,6 +583,7 @@ function Dashboard() {
   const isAdmin = user?.email === 'engeullerbaptista@gmail.com' || user?.email === 'vg@admin.com';
   const isSuperAdmin = user?.email === 'vg@admin.com';
   const canDeleteWorks = isAdmin || user?.level === 3; // Admin or Master can delete
+  const canChangeUserLevels = isSuperAdmin || user?.level === 3; // Super Admin or Master can change levels
 
   useEffect(() => {
     loadWorks();
