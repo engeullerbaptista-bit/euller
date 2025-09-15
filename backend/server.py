@@ -801,11 +801,16 @@ async def download_work_file(work_id: str, current_user = Depends(get_current_us
             detail="File not found on disk"
         )
     
+    # Sanitize filename for Content-Disposition header
+    safe_filename = work['filename'].encode('ascii', errors='ignore').decode('ascii')
+    if not safe_filename:
+        safe_filename = "document.pdf"
+    
     return FileResponse(
         path=file_path,
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename={work['filename']}"},
-        filename=work["filename"]
+        headers={"Content-Disposition": f"attachment; filename={safe_filename}"},
+        filename=safe_filename
     )
 
 @api_router.delete("/delete-work/{work_id}")
