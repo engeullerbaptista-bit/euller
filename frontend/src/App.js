@@ -875,80 +875,162 @@ function Dashboard() {
           {/* Works Tab */}
           <TabsContent value="works" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-serif font-bold text-amber-900">Trabalhos Maçônicos</h2>
+              <h2 className="text-2xl font-serif font-bold text-amber-900">Trabalhos por Usuário</h2>
+              <div className="text-sm text-amber-700">
+                Página {currentPage} de {totalPages}
+              </div>
             </div>
 
-            <div className="grid gap-6">
-              {['aprendiz', 'companheiro', 'mestre'].map((levelName, index) => {
-                const levelNum = index + 1;
-                const levelWorks = works[levelName] || [];
-                
-                // Check if user can access this level
-                if (user.level < levelNum) return null;
-
-                return (
-                  <Card key={levelName} className="bg-white/80 border-amber-200">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-3 text-amber-900">
-                        {getLevelIcon(levelNum)}
-                        <span className="capitalize font-serif">{levelName}</span>
-                        <Badge variant="outline" className={getLevelColor(levelNum)}>
-                          {levelWorks.length} trabalhos
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {levelWorks.length === 0 ? (
-                        <p className="text-amber-600 italic">Nenhum trabalho disponível neste grau.</p>
-                      ) : (
-                        <div className="grid gap-3">
-                          {levelWorks.map((work) => (
-                            <div key={work.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-100">
-                              <div className="flex-1">
-                                <h4 className="font-medium text-amber-900">{work.title}</h4>
-                                <p className="text-sm text-amber-600">
-                                  Por: {work.uploaded_by_name} • {new Date(work.uploaded_at).toLocaleDateString('pt-BR')}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="border-amber-300 text-amber-700"
-                                  onClick={() => viewWork(work.id)}
-                                >
-                                  <ExternalLink className="w-4 h-4 mr-1" />
-                                  Visualizar
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="border-amber-300 text-amber-700"
-                                  onClick={() => downloadWork(work.id)}
-                                >
-                                  <Download className="w-4 h-4 mr-1" />
-                                  Baixar
-                                </Button>
-                                {canDeleteWorks && (
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    className="border-red-300 text-red-700"
-                                    onClick={() => deleteWork(work.id)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+            {loadingUsers ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-700"></div>
+                <span className="ml-2 text-amber-700">Carregando usuários...</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {usersWithWorks.length === 0 ? (
+                  <Card className="bg-white/80 border-amber-200">
+                    <CardContent className="py-8">
+                      <p className="text-center text-amber-600 italic">Nenhum usuário com trabalhos encontrado.</p>
                     </CardContent>
                   </Card>
-                );
-              })}
-            </div>
+                ) : (
+                  <>
+                    {usersWithWorks.map((userWithWorks) => (
+                      <Card key={userWithWorks.id} className="bg-white/80 border-amber-200">
+                        <CardHeader 
+                          className="cursor-pointer hover:bg-amber-50 transition-colors"
+                          onClick={() => toggleUserExpanded(userWithWorks.id)}
+                        >
+                          <CardTitle className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {getLevelIcon(userWithWorks.level)}
+                              <div>
+                                <span className="font-serif text-amber-900">{userWithWorks.full_name}</span>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge variant="outline" className={getLevelColor(userWithWorks.level)}>
+                                    <span className="capitalize">{userWithWorks.level_name}</span>
+                                  </Badge>
+                                  <Badge variant="outline" className="bg-gray-100 text-gray-700">
+                                    {userWithWorks.works_count} trabalhos
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-amber-600">
+                              {expandedUsers[userWithWorks.id] ? '▼' : '▶'}
+                            </div>
+                          </CardTitle>
+                        </CardHeader>
+                        
+                        {expandedUsers[userWithWorks.id] && (
+                          <CardContent>
+                            {userWithWorks.works.length === 0 ? (
+                              <p className="text-amber-600 italic py-4">Este usuário ainda não possui trabalhos.</p>
+                            ) : (
+                              <div className="space-y-3">
+                                {userWithWorks.works.map((work) => (
+                                  <div key={work.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-100">
+                                    <div className="flex-1">
+                                      <h4 className="font-medium text-amber-900">{work.title}</h4>
+                                      <p className="text-sm text-amber-600">
+                                        Nível: {LEVELS[work.level]} • {new Date(work.uploaded_at).toLocaleDateString('pt-BR')}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        className="border-amber-300 text-amber-700"
+                                        onClick={() => viewWork(work.id)}
+                                      >
+                                        <ExternalLink className="w-4 h-4 mr-1" />
+                                        Visualizar
+                                      </Button>
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        className="border-amber-300 text-amber-700"
+                                        onClick={() => downloadWork(work.id)}
+                                      >
+                                        <Download className="w-4 h-4 mr-1" />
+                                        Baixar
+                                      </Button>
+                                      {canDeleteWorks && (
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline" 
+                                          className="border-red-300 text-red-700"
+                                          onClick={() => deleteWork(work.id)}
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </CardContent>
+                        )}
+                      </Card>
+                    ))}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex justify-center items-center gap-2 py-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className="border-amber-300"
+                        >
+                          Anterior
+                        </Button>
+                        
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
+                            
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={currentPage === pageNum ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handlePageChange(pageNum)}
+                                className={currentPage === pageNum ? "bg-amber-700" : "border-amber-300"}
+                              >
+                                {pageNum}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          className="border-amber-300"
+                        >
+                          Próximo
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </TabsContent>
 
           {/* Upload Tab */}
