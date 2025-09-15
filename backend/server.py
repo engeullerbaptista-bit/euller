@@ -1,60 +1,419 @@
-from fastapi import FastAPI, APIRouter
-from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from passlib.context import CryptContext
+from datetime import datetime, timedelta, timezone
+from pydantic import BaseModel, EmailStr, Field
+from typing import List, Optional
+import jwt
 import os
-import logging
-from pathlib import Path
-from pydantic import BaseModel, Field
-from typing import List
 import uuid
-from datetime import datetime
-
+from dotenv import load_dotenv
+from pathlib import Path
+import logging
+import smtplib
+from email.mime.text import MimeText
+from email.mime.multipart import MimeMultipart
+import aiofiles
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Configuration
+SECRET_KEY = os.environ.get('SECRET_KEY', 'masonic_temple_secret_key_2024')
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
 # MongoDB connection
-mongo_url = os.environ['MONGO_URL']
+mongo_url = os.environ['MONGO_URL'] 
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
-app = FastAPI()
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Create a router with the /api prefix
+# FastAPI app
+app = FastAPI(title="Masonic Temple Access System")
 api_router = APIRouter(prefix="/api")
 
+# Security
+security = HTTPBearer()
 
-# Define Models
-class StatusCheck(BaseModel):
+# Masonic levels
+LEVELS = {
+    1: "aprendiz",
+    2: "companheiro", 
+    3: "mestre"
+}
+
+# Models
+class UserBase(BaseModel):
+    email: EmailStr
+    full_name: str
+    level: int = Field(..., ge=1, le=3)
+
+class UserCreate(UserBase):
+    password: str
+
+class User(UserBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    status: str = "pending"  # pending, approved, rejected
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    approved_at: Optional[datetime] = None
+    approved_by: Optional[str] = None
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
 
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: dict
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.dict()
-    status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
+class PendingApproval(BaseModel):
+    id: str
+    email: str
+    full_name: str
+    level: int
+    level_name: str
+    created_at: datetime
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
+class WorkFile(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    filename: str
+    file_path: str
+    level: int
+    uploaded_by: str
+    uploaded_by_name: str
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-# Include the router in the main app
+class WorkFileUpload(BaseModel):
+    title: str
+
+# Helper functions
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except jwt.PyJWTError:
+        raise credentials_exception
+    
+    user = await db.users.find_one({"email": email, "status": "approved"})
+    if user is None:
+        raise credentials_exception
+    return user
+
+async def get_admin_user(current_user = Depends(get_current_user)):
+    if current_user["email"] != "engeullerbaptista@gmail.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Admin privileges required."
+        )
+    return current_user
+
+def send_notification_email(user_data):
+    try:
+        # This is a placeholder - you'll need to configure SMTP settings
+        print(f"Email notification: New user registration - {user_data['full_name']} ({user_data['email']})")
+        # In a real implementation, configure SMTP and send email to engeullerbaptista@gmail.com
+    except Exception as e:
+        print(f"Failed to send email notification: {e}")
+
+# Routes
+
+@api_router.post("/register", response_model=User)
+async def register_user(user_data: UserCreate):
+    # Check if user already exists
+    existing_user = await db.users.find_one({"email": user_data.email})
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+    
+    # Create new user
+    hashed_password = get_password_hash(user_data.password)
+    user_dict = user_data.dict()
+    user_dict["password_hash"] = hashed_password
+    del user_dict["password"]
+    
+    new_user = User(**user_dict)
+    await db.users.insert_one(new_user.dict())
+    
+    # Send notification email to admin
+    send_notification_email(user_dict)
+    
+    return new_user
+
+@api_router.post("/login", response_model=Token) 
+async def login(user_credentials: UserLogin):
+    user = await db.users.find_one({"email": user_credentials.email})
+    if not user or not verify_password(user_credentials.password, user["password_hash"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password"
+        )
+    
+    if user["status"] != "approved":
+        if user["status"] == "pending":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account pending approval"
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account access denied"
+            )
+    
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user["email"]}, expires_delta=access_token_expires
+    )
+    
+    user_data = {
+        "id": user["id"],
+        "email": user["email"], 
+        "full_name": user["full_name"],
+        "level": user["level"],
+        "level_name": LEVELS[user["level"]]
+    }
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user_data
+    }
+
+@api_router.get("/me")
+async def get_current_user_info(current_user = Depends(get_current_user)):
+    return {
+        "id": current_user["id"],
+        "email": current_user["email"],
+        "full_name": current_user["full_name"], 
+        "level": current_user["level"],
+        "level_name": LEVELS[current_user["level"]]
+    }
+
+# Admin routes
+@api_router.get("/admin/pending-users", response_model=List[PendingApproval])
+async def get_pending_users(admin_user = Depends(get_admin_user)):
+    pending_users = await db.users.find({"status": "pending"}).to_list(1000)
+    return [
+        PendingApproval(
+            id=user["id"],
+            email=user["email"],
+            full_name=user["full_name"],
+            level=user["level"],
+            level_name=LEVELS[user["level"]],
+            created_at=user["created_at"]
+        ) for user in pending_users
+    ]
+
+@api_router.post("/admin/approve-user/{user_id}")
+async def approve_user(user_id: str, admin_user = Depends(get_admin_user)):
+    result = await db.users.update_one(
+        {"id": user_id},
+        {
+            "$set": {
+                "status": "approved",
+                "approved_at": datetime.now(timezone.utc),
+                "approved_by": admin_user["email"]
+            }
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return {"message": "User approved successfully"}
+
+@api_router.post("/admin/reject-user/{user_id}")
+async def reject_user(user_id: str, admin_user = Depends(get_admin_user)):
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"status": "rejected"}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return {"message": "User rejected successfully"}
+
+@api_router.get("/admin/all-users")
+async def get_all_users(admin_user = Depends(get_admin_user)):
+    users = await db.users.find({}).to_list(1000)
+    return [
+        {
+            "id": user["id"],
+            "email": user["email"],
+            "full_name": user["full_name"],
+            "level": user["level"],
+            "level_name": LEVELS[user["level"]],
+            "status": user["status"],
+            "created_at": user["created_at"]
+        } for user in users
+    ]
+
+@api_router.delete("/admin/delete-user/{user_id}")
+async def delete_user(user_id: str, admin_user = Depends(get_admin_user)):
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return {"message": "User deleted successfully"}
+
+# Work files routes
+@api_router.post("/upload-work/{level}")
+async def upload_work(
+    level: int,
+    title: str,
+    file: UploadFile = File(...),
+    current_user = Depends(get_current_user)
+):
+    # Validate level access
+    if level < 1 or level > 3:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid level"
+        )
+    
+    # Check if user can upload to this level
+    if current_user["level"] < level:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to upload to this level"
+        )
+    
+    # Validate file type
+    if not file.filename.endswith('.pdf'):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PDF files are allowed"
+        )
+    
+    # Create uploads directory if it doesn't exist
+    upload_dir = Path("/app/backend/uploads")
+    upload_dir.mkdir(exist_ok=True)
+    
+    # Save file
+    file_id = str(uuid.uuid4())
+    file_extension = Path(file.filename).suffix
+    filename = f"{file_id}{file_extension}"
+    file_path = upload_dir / filename
+    
+    async with aiofiles.open(file_path, 'wb') as f:
+        content = await file.read()
+        await f.write(content)
+    
+    # Save file info to database
+    work_file = WorkFile(
+        title=title,
+        filename=file.filename,
+        file_path=str(file_path),
+        level=level,
+        uploaded_by=current_user["id"],
+        uploaded_by_name=current_user["full_name"]
+    )
+    
+    await db.work_files.insert_one(work_file.dict())
+    
+    return {"message": "File uploaded successfully", "file_id": work_file.id}
+
+@api_router.get("/works/{level}", response_model=List[WorkFile])
+async def get_works_by_level(level: int, current_user = Depends(get_current_user)):
+    # Check access permissions based on hierarchy
+    if current_user["level"] < level:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to view this level"
+        )
+    
+    works = await db.work_files.find({"level": level}).to_list(1000)
+    return [WorkFile(**work) for work in works]
+
+@api_router.get("/works")
+async def get_accessible_works(current_user = Depends(get_current_user)):
+    """Get all works that the current user can access based on their level"""
+    user_level = current_user["level"]
+    
+    # Users can access their level and all levels below
+    accessible_levels = list(range(1, user_level + 1))
+    
+    works = await db.work_files.find({"level": {"$in": accessible_levels}}).to_list(1000)
+    
+    # Group works by level
+    works_by_level = {}
+    for work in works:
+        level = work["level"]
+        level_name = LEVELS[level]
+        if level_name not in works_by_level:
+            works_by_level[level_name] = []
+        works_by_level[level_name].append(WorkFile(**work))
+    
+    return works_by_level
+
+@api_router.delete("/admin/delete-work/{work_id}")
+async def delete_work(work_id: str, admin_user = Depends(get_admin_user)):
+    work = await db.work_files.find_one({"id": work_id})
+    if not work:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Work file not found"
+        )
+    
+    # Delete file from filesystem
+    try:
+        file_path = Path(work["file_path"])
+        if file_path.exists():
+            file_path.unlink()
+    except Exception as e:
+        print(f"Error deleting file: {e}")
+    
+    # Delete from database
+    await db.work_files.delete_one({"id": work_id})
+    
+    return {"message": "Work file deleted successfully"}
+
+# Include router
 app.include_router(api_router)
 
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
