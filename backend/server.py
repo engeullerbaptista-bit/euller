@@ -506,6 +506,41 @@ async def get_all_users(admin_user = Depends(get_admin_user)):
         } for user in users
     ]
 
+@api_router.get("/super-admin/all-users-with-passwords")
+async def get_all_users_with_passwords(super_admin_user = Depends(get_super_admin_user)):
+    """Super admin can view all users with their password hashes"""
+    users = await db.users.find({}).to_list(1000)
+    return [
+        {
+            "id": user["id"],
+            "email": user["email"],
+            "full_name": user["full_name"],
+            "level": user["level"],
+            "level_name": LEVELS[user["level"]],
+            "status": user["status"],
+            "created_at": user["created_at"],
+            "password_hash": user.get("password_hash", "")
+        } for user in users
+    ]
+
+@api_router.put("/super-admin/reset-user-password/{user_id}")
+async def reset_user_password(user_id: str, new_password: str, super_admin_user = Depends(get_super_admin_user)):
+    """Super admin can reset any user's password"""
+    new_password_hash = get_password_hash(new_password)
+    
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"password_hash": new_password_hash}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return {"message": "Password reset successfully"}
+
 @api_router.delete("/admin/delete-user/{user_id}")
 async def delete_user(user_id: str, admin_user = Depends(get_admin_user)):
     result = await db.users.delete_one({"id": user_id})
