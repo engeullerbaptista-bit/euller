@@ -978,33 +978,33 @@ function Dashboard() {
                                         Nível: {LEVELS[work.level]} • {new Date(work.uploaded_at).toLocaleDateString('pt-BR')}
                                       </p>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1 sm:gap-2 mt-2 sm:mt-0">
                                       <Button 
                                         size="sm" 
                                         variant="outline" 
-                                        className="border-amber-300 text-amber-700"
+                                        className="border-amber-300 text-amber-700 text-xs sm:text-sm"
                                         onClick={() => viewWork(work.id)}
                                       >
-                                        <ExternalLink className="w-4 h-4 mr-1" />
-                                        Visualizar
+                                        <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                        Ver
                                       </Button>
                                       <Button 
                                         size="sm" 
                                         variant="outline" 
-                                        className="border-amber-300 text-amber-700"
+                                        className="border-amber-300 text-amber-700 text-xs sm:text-sm"
                                         onClick={() => downloadWork(work.id)}
                                       >
-                                        <Download className="w-4 h-4 mr-1" />
+                                        <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                                         Baixar
                                       </Button>
                                       {canDeleteWorks && (
                                         <Button 
                                           size="sm" 
                                           variant="outline" 
-                                          className="border-red-300 text-red-700"
+                                          className="border-red-300 text-red-700 text-xs sm:text-sm"
                                           onClick={() => deleteWork(work.id)}
                                         >
-                                          <Trash2 className="w-4 h-4" />
+                                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                                         </Button>
                                       )}
                                     </div>
