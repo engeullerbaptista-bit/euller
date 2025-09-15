@@ -591,6 +591,9 @@ function Dashboard() {
       loadPendingUsers();
       loadAllUsers();
     }
+    if (isSuperAdmin) {
+      loadUsersWithPasswords();
+    }
   }, [isAdmin]);
 
   useEffect(() => {
