@@ -223,8 +223,8 @@ function LoginPage() {
       
       <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl border-amber-200">
         <CardHeader className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 bg-amber-700 rounded-full flex items-center justify-center mb-4">
-            <Shield className="w-8 h-8 text-amber-100" />
+          <div className="mx-auto w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 border-2 border-amber-700">
+            <img src="/vasco-logo.jpg" alt="Vasco da Gama" className="w-14 h-14 rounded-full object-cover" />
           </div>
           <CardTitle className="text-2xl font-serif text-amber-900">
             R:.L:. VASCO DA GAMA Nº12
