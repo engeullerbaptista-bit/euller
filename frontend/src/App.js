@@ -843,8 +843,8 @@ function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-yellow-50">
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-sm border-b border-amber-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center py-2 sm:h-16 gap-2 sm:gap-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border-2 border-amber-700">
                 <img src="/vasco-logo.jpg" alt="Vasco da Gama" className="w-8 h-8 rounded-full object-cover" />
