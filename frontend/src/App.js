@@ -559,6 +559,10 @@ function ProfileEditDialog({ user, onUpdate }) {
 function Dashboard() {
   const { user, logout } = React.useContext(AuthContext);
   const [works, setWorks] = useState({});
+  const [usersWithWorks, setUsersWithWorks] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [pendingUsers, setPendingUsers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [uploadDialog, setUploadDialog] = useState(false);
@@ -566,6 +570,7 @@ function Dashboard() {
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [expandedUsers, setExpandedUsers] = useState({});
 
   const isAdmin = user?.email === 'engeullerbaptista@gmail.com' || user?.email === 'admin@admin.com';
   const canDeleteWorks = isAdmin || user?.level === 3; // Admin or Master can delete
