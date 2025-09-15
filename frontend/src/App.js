@@ -567,7 +567,7 @@ function Dashboard() {
   const [uploadFile, setUploadFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const isAdmin = user?.email === 'engeullerbaptista@gmail.com' || user?.email === 'admin@admin';
+  const isAdmin = user?.email === 'engeullerbaptista@gmail.com' || user?.email === 'admin@admin.com';
   const canDeleteWorks = isAdmin || user?.level === 3; // Admin or Master can delete
 
   useEffect(() => {
