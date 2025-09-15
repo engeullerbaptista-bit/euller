@@ -761,6 +761,7 @@ function Dashboard() {
       setUploadFile(null);
       setUploadLevel('');
       loadWorks();
+      loadUsersWithWorks();
       
       // Show uploaded work immediately if file_id is returned
       if (response.data.file_id) {
