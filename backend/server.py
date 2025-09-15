@@ -551,6 +551,51 @@ async def reset_user_password(user_id: str, new_password: str, super_admin_user 
     
     return {"message": "Password reset successfully"}
 
+@api_router.put("/admin/change-user-level/{user_id}")
+async def change_user_level(user_id: str, new_level: int, admin_user = Depends(get_super_admin_or_master_user)):
+    """Super Admin or Master can change user's masonic level"""
+    
+    # Validate level
+    if new_level not in [1, 2, 3]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid level. Must be 1 (aprendiz), 2 (companheiro), or 3 (mestre)"
+        )
+    
+    # Check if user exists
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Prevent changing own level for non-super-admin
+    if (user_id == admin_user["id"] and 
+        admin_user["email"] not in SUPER_ADMIN_EMAILS):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Masters cannot change their own level"
+        )
+    
+    # Update user level
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"level": new_level}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Failed to update user level"
+        )
+    
+    return {
+        "message": f"User level changed to {LEVELS[new_level]} successfully",
+        "new_level": new_level,
+        "new_level_name": LEVELS[new_level]
+    }
+
 @api_router.delete("/admin/delete-user/{user_id}")
 async def delete_user(user_id: str, admin_user = Depends(get_admin_user)):
     result = await db.users.delete_one({"id": user_id})
