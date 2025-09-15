@@ -668,6 +668,7 @@ function Dashboard() {
       await axios.delete(`${API}/delete-work/${workId}`);
       toast.success('Trabalho deletado com sucesso');
       loadWorks();
+      loadUsersWithWorks();
     } catch (error) {
       toast.error('Erro ao deletar trabalho');
     }
