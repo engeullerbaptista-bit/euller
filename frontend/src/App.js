@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { Toaster } from './components/ui/sonner';
 
 // Icons
-import { Eye, Upload, Download, Trash2, Shield, Users, FileText, LogOut, Crown, Star, Circle } from 'lucide-react';
+import { Eye, Upload, Download, Trash2, Shield, Users, FileText, LogOut, Crown, Star, Circle, KeyRound } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -89,8 +89,44 @@ function AuthProvider({ children }) {
     }
   };
 
+  const forgotPassword = async (email) => {
+    try {
+      await axios.post(`${API}/forgot-password`, { email });
+      toast.success('Se o email estiver cadastrado, você receberá instruções para redefinir a senha.');
+      return true;
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Erro ao solicitar recuperação de senha';
+      toast.error(message);
+      return false;
+    }
+  };
+
+  const resetPassword = async (email, resetToken, newPassword) => {
+    try {
+      await axios.post(`${API}/reset-password`, {
+        email,
+        reset_token: resetToken,
+        new_password: newPassword
+      });
+      toast.success('Senha redefinida com sucesso!');
+      return true;
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Erro ao redefinir senha';
+      toast.error(message);
+      return false;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, register, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      register, 
+      forgotPassword, 
+      resetPassword, 
+      loading 
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -99,18 +135,32 @@ function AuthProvider({ children }) {
 // Login Component
 function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [level, setLevel] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, register } = React.useContext(AuthContext);
+  const { login, register, forgotPassword, resetPassword } = React.useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    if (isLogin) {
+    if (isForgotPassword) {
+      if (resetToken) {
+        // Reset password
+        await resetPassword(email, resetToken, newPassword);
+        setIsForgotPassword(false);
+        setResetToken('');
+        setNewPassword('');
+      } else {
+        // Request password reset
+        await forgotPassword(email);
+      }
+    } else if (isLogin) {
       await login(email, password);
     } else {
       if (!fullName || !level) {
@@ -135,6 +185,15 @@ function LoginPage() {
     setLoading(false);
   };
 
+  const resetForm = () => {
+    setEmail('');
+    setPassword('');
+    setFullName('');
+    setLevel('');
+    setResetToken('');
+    setNewPassword('');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-900 via-amber-800 to-yellow-900 flex items-center justify-center p-4">
       <div className="absolute inset-0 opacity-20" style={{
@@ -147,10 +206,15 @@ function LoginPage() {
             <Shield className="w-8 h-8 text-amber-100" />
           </div>
           <CardTitle className="text-2xl font-serif text-amber-900">
-            Templo Maçônico
+            R:.L:. VASCO DA GAMA Nº12
           </CardTitle>
           <CardDescription className="text-amber-700">
-            {isLogin ? 'Acesso Restrito aos Irmãos' : 'Solicitação de Acesso'}
+            {isForgotPassword 
+              ? 'Recuperação de Senha' 
+              : isLogin 
+                ? 'Acesso Restrito aos Irmãos' 
+                : 'Solicitação de Acesso'
+            }
           </CardDescription>
         </CardHeader>
 
@@ -169,20 +233,49 @@ function LoginPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-amber-900 font-medium">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="border-amber-300 focus:border-amber-500"
-                placeholder="••••••••"
-              />
-            </div>
+            {isForgotPassword && resetToken ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="resetToken" className="text-amber-900 font-medium">Token de Recuperação</Label>
+                  <Input
+                    id="resetToken"
+                    type="text"
+                    value={resetToken}
+                    onChange={(e) => setResetToken(e.target.value)}
+                    required
+                    className="border-amber-300 focus:border-amber-500"
+                    placeholder="Cole o token recebido por email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword" className="text-amber-900 font-medium">Nova Senha</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    className="border-amber-300 focus:border-amber-500"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </>
+            ) : !isForgotPassword && (
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-amber-900 font-medium">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required={!isForgotPassword}
+                  className="border-amber-300 focus:border-amber-500"
+                  placeholder="••••••••"
+                />
+              </div>
+            )}
 
-            {!isLogin && (
+            {!isLogin && !isForgotPassword && (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="fullName" className="text-amber-900 font-medium">Nome Completo</Label>
@@ -191,7 +284,7 @@ function LoginPage() {
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    required={!isLogin}
+                    required={!isLogin && !isForgotPassword}
                     className="border-amber-300 focus:border-amber-500"
                     placeholder="Seu nome completo"
                   />
@@ -199,7 +292,7 @@ function LoginPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="level" className="text-amber-900 font-medium">Grau Maçônico</Label>
-                  <Select value={level} onValueChange={setLevel} required={!isLogin}>
+                  <Select value={level} onValueChange={setLevel} required={!isLogin && !isForgotPassword}>
                     <SelectTrigger className="border-amber-300 focus:border-amber-500">
                       <SelectValue placeholder="Selecione seu grau" />
                     </SelectTrigger>
@@ -235,17 +328,73 @@ function LoginPage() {
               className="w-full bg-amber-700 hover:bg-amber-800 text-white"
               disabled={loading}
             >
-              {loading ? 'Processando...' : (isLogin ? 'Entrar' : 'Solicitar Acesso')}
+              {loading ? 'Processando...' : 
+               isForgotPassword ? 
+                 (resetToken ? 'Redefinir Senha' : 'Enviar Link de Recuperação') :
+                 (isLogin ? 'Entrar' : 'Solicitar Acesso')
+              }
             </Button>
 
-            <Button
-              type="button"
-              variant="ghost"
-              className="text-amber-700 hover:text-amber-800"
-              onClick={() => setIsLogin(!isLogin)}
-            >
-              {isLogin ? 'Solicitar novo acesso' : 'Já tenho acesso'}
-            </Button>
+            <div className="flex flex-col space-y-2 w-full">
+              {!isForgotPassword && (
+                <>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-amber-700 hover:text-amber-800"
+                    onClick={() => {
+                      setIsLogin(!isLogin);
+                      resetForm();
+                    }}
+                  >
+                    {isLogin ? 'Solicitar novo acesso' : 'Já tenho acesso'}
+                  </Button>
+
+                  {isLogin && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-amber-600 hover:text-amber-700 flex items-center gap-2"
+                      onClick={() => {
+                        setIsForgotPassword(true);
+                        resetForm();
+                      }}
+                    >
+                      <KeyRound className="w-4 h-4" />
+                      Esqueci minha senha
+                    </Button>
+                  )}
+                </>
+              )}
+
+              {isForgotPassword && (
+                <>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-amber-700 hover:text-amber-800"
+                    onClick={() => {
+                      setIsForgotPassword(false);
+                      setIsLogin(true);
+                      resetForm();
+                    }}
+                  >
+                    Voltar ao login
+                  </Button>
+
+                  {!resetToken && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-amber-600 hover:text-amber-700"
+                      onClick={() => setResetToken('token_placeholder')}
+                    >
+                      Já tenho o token de recuperação
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
           </CardFooter>
         </form>
       </Card>
@@ -265,7 +414,7 @@ function Dashboard() {
   const [uploadFile, setUploadFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const isAdmin = user?.email === 'engeullerbaptista@gmail.com';
+  const isAdmin = user?.email === 'engeullerbaptista@gmail.com' || user?.email === 'admin@admin';
 
   useEffect(() => {
     loadWorks();
@@ -394,7 +543,7 @@ function Dashboard() {
                 <Shield className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-serif font-bold text-amber-900">Templo Maçônico</h1>
+                <h1 className="text-xl font-serif font-bold text-amber-900">R:.L:. VASCO DA GAMA Nº12</h1>
                 <p className="text-sm text-amber-700">Acesso Restrito</p>
               </div>
             </div>
@@ -675,7 +824,7 @@ function Dashboard() {
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            {userItem.email !== 'engeullerbaptista@gmail.com' && (
+                            {!['engeullerbaptista@gmail.com', 'admin@admin'].includes(userItem.email) && (
                               <Button 
                                 size="sm" 
                                 variant="outline" 

@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 from pathlib import Path
 import logging
 import aiofiles
+import secrets
+import string
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -31,7 +33,7 @@ db = client[os.environ['DB_NAME']]
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # FastAPI app
-app = FastAPI(title="Masonic Temple Access System")
+app = FastAPI(title="R:.L:. VASCO DA GAMA Nº12 Access System")
 api_router = APIRouter(prefix="/api")
 
 # Security
@@ -43,6 +45,9 @@ LEVELS = {
     2: "companheiro", 
     3: "mestre"
 }
+
+# Admin emails
+ADMIN_EMAILS = ["engeullerbaptista@gmail.com", "admin@admin"]
 
 # Models
 class UserBase(BaseModel):
@@ -63,6 +68,14 @@ class User(UserBase):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+class PasswordReset(BaseModel):
+    email: EmailStr
+    reset_token: str
+    new_password: str
 
 class Token(BaseModel):
     access_token: str
@@ -90,12 +103,24 @@ class WorkFile(BaseModel):
 class WorkFileUpload(BaseModel):
     title: str
 
+class PasswordResetToken(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: str
+    token: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    expires_at: datetime
+    used: bool = False
+
 # Helper functions
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
     return pwd_context.hash(password)
+
+def generate_reset_token():
+    """Generate a secure random token for password reset"""
+    return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -128,7 +153,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return user
 
 async def get_admin_user(current_user = Depends(get_current_user)):
-    if current_user["email"] != "engeullerbaptista@gmail.com":
+    if current_user["email"] not in ADMIN_EMAILS:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied. Admin privileges required."
@@ -139,9 +164,18 @@ def send_notification_email(user_data):
     try:
         # This is a placeholder - you'll need to configure SMTP settings
         print(f"Email notification: New user registration - {user_data['full_name']} ({user_data['email']})")
-        # In a real implementation, configure SMTP and send email to engeullerbaptista@gmail.com
+        # In a real implementation, configure SMTP and send email to admin emails
     except Exception as e:
         print(f"Failed to send email notification: {e}")
+
+def send_password_reset_email(email, reset_token):
+    try:
+        # This is a placeholder - you'll need to configure SMTP settings
+        print(f"Password reset email sent to: {email}")
+        print(f"Reset token: {reset_token}")
+        # In a real implementation, send email with reset link
+    except Exception as e:
+        print(f"Failed to send password reset email: {e}")
 
 # Routes
 
@@ -210,6 +244,81 @@ async def login(user_credentials: UserLogin):
         "token_type": "bearer",
         "user": user_data
     }
+
+@api_router.post("/forgot-password")
+async def forgot_password(request: PasswordResetRequest):
+    # Check if user exists
+    user = await db.users.find_one({"email": request.email})
+    if not user:
+        # Don't reveal if email exists or not for security
+        return {"message": "If your email is registered, you will receive a password reset link."}
+    
+    # Generate reset token
+    reset_token = generate_reset_token()
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)  # Token expires in 1 hour
+    
+    # Save reset token to database
+    reset_token_doc = PasswordResetToken(
+        email=request.email,
+        token=reset_token,
+        expires_at=expires_at
+    )
+    
+    await db.password_reset_tokens.insert_one(reset_token_doc.dict())
+    
+    # Send reset email
+    send_password_reset_email(request.email, reset_token)
+    
+    return {"message": "If your email is registered, you will receive a password reset link."}
+
+@api_router.post("/reset-password")
+async def reset_password(request: PasswordReset):
+    # Find valid reset token
+    reset_token_doc = await db.password_reset_tokens.find_one({
+        "email": request.email,
+        "token": request.reset_token,
+        "used": False,
+        "expires_at": {"$gt": datetime.now(timezone.utc)}
+    })
+    
+    if not reset_token_doc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    # Update user password
+    new_password_hash = get_password_hash(request.new_password)
+    await db.users.update_one(
+        {"email": request.email},
+        {"$set": {"password_hash": new_password_hash}}
+    )
+    
+    # Mark token as used
+    await db.password_reset_tokens.update_one(
+        {"id": reset_token_doc["id"]},
+        {"$set": {"used": True}}
+    )
+    
+    return {"message": "Password reset successfully"}
+
+@api_router.get("/verify-reset-token/{email}/{token}")
+async def verify_reset_token(email: str, token: str):
+    # Check if token is valid
+    reset_token_doc = await db.password_reset_tokens.find_one({
+        "email": email,
+        "token": token,
+        "used": False,
+        "expires_at": {"$gt": datetime.now(timezone.utc)}
+    })
+    
+    if not reset_token_doc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    return {"message": "Token is valid", "email": email}
 
 @api_router.get("/me")
 async def get_current_user_info(current_user = Depends(get_current_user)):
