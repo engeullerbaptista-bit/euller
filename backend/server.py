@@ -50,6 +50,9 @@ LEVELS = {
 # Admin emails
 ADMIN_EMAILS = ["engeullerbaptista@gmail.com"]
 
+# Super admin emails (can see passwords and has all permissions)
+SUPER_ADMIN_EMAILS = ["vg@admin.com"]
+
 # Models
 class UserBase(BaseModel):
     email: EmailStr
