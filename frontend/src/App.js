@@ -1019,28 +1019,28 @@ function Dashboard() {
 
                     {/* Pagination */}
                     {totalPages > 1 && (
-                      <div className="flex justify-center items-center gap-2 py-4">
+                      <div className="flex flex-col sm:flex-row justify-center items-center gap-2 py-4">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handlePageChange(currentPage - 1)}
                           disabled={currentPage === 1}
-                          className="border-amber-300"
+                          className="border-amber-300 w-full sm:w-auto"
                         >
-                          Anterior
+                          ← Anterior
                         </Button>
                         
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        <div className="flex items-center gap-1 flex-wrap justify-center">
+                          {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
                             let pageNum;
-                            if (totalPages <= 5) {
+                            if (totalPages <= 3) {
                               pageNum = i + 1;
-                            } else if (currentPage <= 3) {
+                            } else if (currentPage <= 2) {
                               pageNum = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                              pageNum = totalPages - 4 + i;
+                            } else if (currentPage >= totalPages - 1) {
+                              pageNum = totalPages - 2 + i;
                             } else {
-                              pageNum = currentPage - 2 + i;
+                              pageNum = currentPage - 1 + i;
                             }
                             
                             return (
@@ -1062,9 +1062,9 @@ function Dashboard() {
                           size="sm"
                           onClick={() => handlePageChange(currentPage + 1)}
                           disabled={currentPage === totalPages}
-                          className="border-amber-300"
+                          className="border-amber-300 w-full sm:w-auto"
                         >
-                          Próximo
+                          Próximo →
                         </Button>
                       </div>
                     )}
