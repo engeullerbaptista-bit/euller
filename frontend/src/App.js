@@ -577,11 +577,16 @@ function Dashboard() {
 
   useEffect(() => {
     loadWorks();
+    loadUsersWithWorks();
     if (isAdmin) {
       loadPendingUsers();
       loadAllUsers();
     }
   }, [isAdmin]);
+
+  useEffect(() => {
+    loadUsersWithWorks();
+  }, [currentPage]);
 
   const loadWorks = async () => {
     try {
