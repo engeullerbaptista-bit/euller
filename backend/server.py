@@ -12,9 +12,6 @@ import uuid
 from dotenv import load_dotenv
 from pathlib import Path
 import logging
-import smtplib
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
 import aiofiles
 
 ROOT_DIR = Path(__file__).parent
