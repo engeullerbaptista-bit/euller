@@ -602,6 +602,52 @@ async def get_accessible_works(current_user = Depends(get_current_user)):
     
     return works_by_level
 
+@api_router.get("/users-with-works")
+async def get_users_with_works(page: int = 1, limit: int = 20, current_user = Depends(get_current_user)):
+    """Get users with their works based on access level hierarchy"""
+    user_level = current_user["level"]
+    
+    # Users can access users of their level and all levels below
+    accessible_levels = list(range(1, user_level + 1))
+    
+    # Get users with approved status and accessible levels
+    users = await db.users.find({
+        "status": "approved", 
+        "level": {"$in": accessible_levels}
+    }).to_list(1000)
+    
+    # Calculate pagination
+    skip = (page - 1) * limit
+    total_users = len(users)
+    paginated_users = users[skip:skip + limit]
+    
+    users_with_works = []
+    
+    for user in paginated_users:
+        # Get works for this user
+        user_works = await db.work_files.find({"uploaded_by": user["id"]}).to_list(1000)
+        
+        user_data = {
+            "id": user["id"],
+            "full_name": user["full_name"],
+            "email": user["email"],
+            "level": user["level"],
+            "level_name": LEVELS[user["level"]],
+            "works_count": len(user_works),
+            "works": [WorkFile(**work) for work in user_works]
+        }
+        users_with_works.append(user_data)
+    
+    return {
+        "users": users_with_works,
+        "pagination": {
+            "current_page": page,
+            "total_pages": (total_users + limit - 1) // limit,
+            "total_users": total_users,
+            "limit": limit
+        }
+    }
+
 @api_router.get("/work-file/{work_id}")
 async def view_work_file(work_id: str, current_user = Depends(get_current_user)):
     """Serve PDF file for viewing in browser"""
