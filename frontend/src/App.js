@@ -855,23 +855,25 @@ function Dashboard() {
               </div>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="text-right">
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+              <div className="text-center sm:text-right">
                 <p className="text-sm font-medium text-amber-900">{user.full_name}</p>
                 <Badge variant="outline" className={getLevelColor(user.level)}>
                   {getLevelIcon(user.level)}
                   <span className="ml-1 capitalize">{user.level_name}</span>
                 </Badge>
               </div>
-              <ProfileEditDialog user={user} />
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={logout}
-                className="text-amber-700 hover:text-amber-800"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <ProfileEditDialog user={user} />
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={logout}
+                  className="text-amber-700 hover:text-amber-800"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
