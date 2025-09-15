@@ -162,7 +162,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return user
 
 async def get_admin_user(current_user = Depends(get_current_user)):
-    if current_user["email"] not in ADMIN_EMAILS:
+    if current_user["email"] not in ADMIN_EMAILS and current_user["email"] not in SUPER_ADMIN_EMAILS:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied. Admin privileges required."
