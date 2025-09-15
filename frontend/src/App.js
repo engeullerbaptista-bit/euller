@@ -663,30 +663,6 @@ function Dashboard() {
     window.open(downloadUrl, '_blank');
   };
 
-  const deleteWork = async (workId) => {
-    if (!window.confirm('Tem certeza que deseja deletar este trabalho?')) return;
-    
-    try {
-      await axios.delete(`${API}/delete-work/${workId}`);
-      toast.success('Trabalho deletado com sucesso');
-      loadWorks();
-    } catch (error) {
-      toast.error('Erro ao deletar trabalho');
-    }
-  };
-
-  const viewWork = (workId) => {
-    // Open PDF in new tab for viewing
-    const viewUrl = `${API}/work-file/${workId}`;
-    window.open(viewUrl, '_blank');
-  };
-
-  const downloadWork = (workId) => {
-    // Download PDF file
-    const downloadUrl = `${API}/download-work/${workId}`;
-    window.open(downloadUrl, '_blank');
-  };
-
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!uploadFile || !uploadTitle || !uploadLevel) {
