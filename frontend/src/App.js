@@ -1030,7 +1030,7 @@ function Dashboard() {
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            {!['engeullerbaptista@gmail.com', 'admin@admin'].includes(userItem.email) && (
+                            {!['engeullerbaptista@gmail.com', 'admin@admin.com'].includes(userItem.email) && (
                               <Button 
                                 size="sm" 
                                 variant="outline" 
