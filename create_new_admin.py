@@ -15,14 +15,14 @@ load_dotenv(ROOT_DIR / '.env')
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 async def create_new_admin():
-    """Create the new admin user admin@admin with password 99658579"""
+    """Create the new admin user admin@admin.com with password 99658579"""
     
     # Connect to MongoDB
     mongo_url = os.environ['MONGO_URL']
     client = AsyncIOMotorClient(mongo_url)
     db = client[os.environ['DB_NAME']]
     
-    admin_email = "admin@admin"
+    admin_email = "admin@admin.com"
     admin_password = "99658579"
     
     try:
