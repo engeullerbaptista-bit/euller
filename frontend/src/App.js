@@ -879,7 +879,7 @@ function Dashboard() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <Tabs defaultValue="works" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-white/80 border border-amber-200">
             <TabsTrigger value="works" className="data-[state=active]:bg-amber-100">
