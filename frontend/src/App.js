@@ -971,7 +971,7 @@ function Dashboard() {
                             ) : (
                               <div className="space-y-3">
                                 {userWithWorks.works.map((work) => (
-                                  <div key={work.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-100">
+                                  <div key={work.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-amber-50 rounded-lg border border-amber-100 gap-2 sm:gap-0">
                                     <div className="flex-1">
                                       <h4 className="font-medium text-amber-900">{work.title}</h4>
                                       <p className="text-sm text-amber-600">
