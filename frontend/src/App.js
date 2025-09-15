@@ -636,6 +636,27 @@ function Dashboard() {
     }
   };
 
+  const loadUsersWithPasswords = async () => {
+    if (!isSuperAdmin) return;
+    try {
+      const response = await axios.get(`${API}/super-admin/all-users-with-passwords`);
+      setUsersWithPasswords(response.data);
+    } catch (error) {
+      toast.error('Erro ao carregar usuários com senhas');
+    }
+  };
+
+  const resetUserPassword = async (userId, newPassword) => {
+    if (!isSuperAdmin) return;
+    try {
+      await axios.put(`${API}/super-admin/reset-user-password/${userId}?new_password=${encodeURIComponent(newPassword)}`);
+      toast.success('Senha do usuário redefinida com sucesso');
+      loadUsersWithPasswords();
+    } catch (error) {
+      toast.error('Erro ao redefinir senha do usuário');
+    }
+  };
+
   const approveUser = async (userId) => {
     try {
       await axios.post(`${API}/admin/approve-user/${userId}`);
