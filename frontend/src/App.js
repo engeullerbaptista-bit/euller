@@ -569,7 +569,6 @@ function Dashboard() {
 
   const isAdmin = user?.email === 'engeullerbaptista@gmail.com' || user?.email === 'admin@admin';
   const canDeleteWorks = isAdmin || user?.level === 3; // Admin or Master can delete
-  const canDeleteWorks = isAdmin || user?.level === 3; // Admin or Master can delete
 
   useEffect(() => {
     loadWorks();
