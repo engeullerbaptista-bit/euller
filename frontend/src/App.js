@@ -1256,6 +1256,93 @@ function Dashboard() {
                   </CardContent>
                 </Card>
               </TabsContent>
+              
+              {isSuperAdmin && (
+                <TabsContent value="super-admin">
+                  <Card className="bg-white/80 border-red-200">
+                    <CardHeader>
+                      <CardTitle className="text-red-900 font-serif flex items-center gap-2">
+                        <Crown className="w-5 h-5" />
+                        Super Administrador - Acesso Total
+                      </CardTitle>
+                      <CardDescription className="text-red-700">
+                        Controle total do sistema - Ver senhas, redefinir senhas, acesso irrestrito
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-red-900">Usuários com Senhas Visíveis</h3>
+                        {usersWithPasswords.length === 0 ? (
+                          <p className="text-red-600 italic">Carregando usuários...</p>
+                        ) : (
+                          <div className="space-y-4">
+                            {usersWithPasswords.map((userItem) => (
+                              <div key={userItem.id} className="p-4 bg-red-50 rounded-lg border border-red-100">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <h4 className="font-medium text-red-900">{userItem.full_name}</h4>
+                                    <p className="text-sm text-red-600">{userItem.email}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Badge variant="outline" className={getLevelColor(userItem.level)}>
+                                        {getLevelIcon(userItem.level)}
+                                        <span className="ml-1 capitalize">{userItem.level_name}</span>
+                                      </Badge>
+                                      <Badge 
+                                        variant={userItem.status === 'approved' ? 'default' : 'secondary'}
+                                        className={
+                                          userItem.status === 'approved' 
+                                            ? 'bg-green-100 text-green-800' 
+                                            : userItem.status === 'pending'
+                                            ? 'bg-yellow-100 text-yellow-800'
+                                            : 'bg-red-100 text-red-800'
+                                        }
+                                      >
+                                        {userItem.status === 'approved' ? 'Aprovado' : 
+                                         userItem.status === 'pending' ? 'Pendente' : 'Rejeitado'}
+                                      </Badge>
+                                    </div>
+                                    <div className="mt-2 p-2 bg-gray-100 rounded text-xs font-mono">
+                                      <strong>Hash da Senha:</strong><br />
+                                      <span className="break-all">{userItem.password_hash}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-2 ml-4">
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="border-blue-300 text-blue-700"
+                                      onClick={() => {
+                                        const newPassword = prompt('Digite a nova senha para este usuário:');
+                                        if (newPassword) {
+                                          resetUserPassword(userItem.id, newPassword);
+                                        }
+                                      }}
+                                    >
+                                      <KeyRound className="w-4 h-4 mr-1" />
+                                      Redefinir Senha
+                                    </Button>
+                                    {!['engeullerbaptista@gmail.com', 'vg@admin.com'].includes(userItem.email) && (
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        className="border-red-300 text-red-700"
+                                        onClick={() => deleteUser(userItem.id)}
+                                      >
+                                        <Trash2 className="w-4 h-4 mr-1" />
+                                        Deletar
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
             </>
           )}
         </Tabs>
