@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { Toaster } from './components/ui/sonner';
 
 // Icons
-import { Eye, Upload, Download, Trash2, Shield, Users, FileText, LogOut, Crown, Star, Circle, KeyRound } from 'lucide-react';
+import { Eye, Upload, Download, Trash2, Shield, Users, FileText, LogOut, Crown, Star, Circle, KeyRound, Edit, User, ExternalLink } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -117,6 +117,19 @@ function AuthProvider({ children }) {
     }
   };
 
+  const updateProfile = async (updateData) => {
+    try {
+      await axios.put(`${API}/me`, updateData);
+      await fetchUserInfo(); // Refresh user data
+      toast.success('Perfil atualizado com sucesso!');
+      return true;
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Erro ao atualizar perfil';
+      toast.error(message);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -125,6 +138,7 @@ function AuthProvider({ children }) {
       register, 
       forgotPassword, 
       resetPassword, 
+      updateProfile,
       loading 
     }}>
       {children}
@@ -402,6 +416,145 @@ function LoginPage() {
   );
 }
 
+// Profile Edit Dialog Component
+function ProfileEditDialog({ user, onUpdate }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [fullName, setFullName] = useState(user?.full_name || '');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { updateProfile } = React.useContext(AuthContext);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    // Validation
+    if (newPassword && newPassword !== confirmPassword) {
+      toast.error('As senhas não coincidem');
+      setLoading(false);
+      return;
+    }
+
+    if (newPassword && !currentPassword) {
+      toast.error('Digite sua senha atual para alterar a senha');
+      setLoading(false);
+      return;
+    }
+
+    const updateData = {};
+    
+    if (fullName !== user.full_name) {
+      updateData.full_name = fullName;
+    }
+
+    if (newPassword) {
+      updateData.current_password = currentPassword;
+      updateData.new_password = newPassword;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      toast.info('Nenhuma alteração foi feita');
+      setLoading(false);
+      return;
+    }
+
+    const success = await updateProfile(updateData);
+    if (success) {
+      setIsOpen(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      if (onUpdate) onUpdate();
+    }
+    
+    setLoading(false);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-amber-700 hover:text-amber-800">
+          <Edit className="w-4 h-4 mr-1" />
+          Editar Perfil
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-white border-amber-200">
+        <DialogHeader>
+          <DialogTitle className="text-amber-900 font-serif">Editar Perfil</DialogTitle>
+          <DialogDescription className="text-amber-700">
+            Atualize suas informações pessoais
+          </DialogDescription>
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="text-amber-900 font-medium">Nome Completo</Label>
+              <Input
+                id="fullName"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="border-amber-300 focus:border-amber-500"
+                placeholder="Seu nome completo"
+              />
+            </div>
+
+            <Separator />
+            
+            <div className="space-y-2">
+              <Label className="text-amber-900 font-medium">Alterar Senha (opcional)</Label>
+              
+              <Input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="border-amber-300 focus:border-amber-500"
+                placeholder="Senha atual"
+              />
+              
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="border-amber-300 focus:border-amber-500"
+                placeholder="Nova senha"
+              />
+              
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="border-amber-300 focus:border-amber-500"
+                placeholder="Confirmar nova senha"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="mt-6">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsOpen(false)}
+              className="border-amber-300"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="submit" 
+              className="bg-amber-700 hover:bg-amber-800"
+              disabled={loading}
+            >
+              {loading ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // Dashboard Component
 function Dashboard() {
   const { user, logout } = React.useContext(AuthContext);
@@ -415,6 +568,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(false);
 
   const isAdmin = user?.email === 'engeullerbaptista@gmail.com' || user?.email === 'admin@admin';
+  const canDeleteWorks = isAdmin || user?.level === 3; // Admin or Master can delete
 
   useEffect(() => {
     loadWorks();
@@ -485,6 +639,30 @@ function Dashboard() {
     }
   };
 
+  const deleteWork = async (workId) => {
+    if (!window.confirm('Tem certeza que deseja deletar este trabalho?')) return;
+    
+    try {
+      await axios.delete(`${API}/delete-work/${workId}`);
+      toast.success('Trabalho deletado com sucesso');
+      loadWorks();
+    } catch (error) {
+      toast.error('Erro ao deletar trabalho');
+    }
+  };
+
+  const viewWork = (workId) => {
+    // Open PDF in new tab for viewing
+    const viewUrl = `${API}/work-file/${workId}`;
+    window.open(viewUrl, '_blank');
+  };
+
+  const downloadWork = (workId) => {
+    // Download PDF file
+    const downloadUrl = `${API}/download-work/${workId}`;
+    window.open(downloadUrl, '_blank');
+  };
+
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!uploadFile || !uploadTitle || !uploadLevel) {
@@ -498,15 +676,23 @@ function Dashboard() {
     formData.append('title', uploadTitle);
 
     try {
-      await axios.post(`${API}/upload-work/${uploadLevel}?title=${encodeURIComponent(uploadTitle)}`, formData, {
+      const response = await axios.post(`${API}/upload-work/${uploadLevel}?title=${encodeURIComponent(uploadTitle)}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      
       toast.success('Trabalho enviado com sucesso!');
       setUploadDialog(false);
       setUploadTitle('');
       setUploadFile(null);
       setUploadLevel('');
       loadWorks();
+      
+      // Show uploaded work immediately if file_id is returned
+      if (response.data.file_id) {
+        setTimeout(() => {
+          viewWork(response.data.file_id);
+        }, 1000);
+      }
     } catch (error) {
       const message = error.response?.data?.detail || 'Erro ao enviar trabalho';
       toast.error(message);
@@ -556,6 +742,7 @@ function Dashboard() {
                   <span className="ml-1 capitalize">{user.level_name}</span>
                 </Badge>
               </div>
+              <ProfileEditDialog user={user} />
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -636,12 +823,31 @@ function Dashboard() {
                                 </p>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Button size="sm" variant="outline" className="border-amber-300 text-amber-700">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="border-amber-300 text-amber-700"
+                                  onClick={() => viewWork(work.id)}
+                                >
+                                  <ExternalLink className="w-4 h-4 mr-1" />
+                                  Visualizar
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="border-amber-300 text-amber-700"
+                                  onClick={() => downloadWork(work.id)}
+                                >
                                   <Download className="w-4 h-4 mr-1" />
                                   Baixar
                                 </Button>
-                                {isAdmin && (
-                                  <Button size="sm" variant="outline" className="border-red-300 text-red-700">
+                                {canDeleteWorks && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="border-red-300 text-red-700"
+                                    onClick={() => deleteWork(work.id)}
+                                  >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
                                 )}

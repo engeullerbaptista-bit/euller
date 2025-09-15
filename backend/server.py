@@ -1,6 +1,7 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
@@ -57,6 +58,11 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    current_password: Optional[str] = None
+    new_password: Optional[str] = None
 
 class User(UserBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -157,6 +163,15 @@ async def get_admin_user(current_user = Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied. Admin privileges required."
+        )
+    return current_user
+
+async def get_admin_or_master_user(current_user = Depends(get_current_user)):
+    # Admin or Master (level 3) can delete works
+    if current_user["email"] not in ADMIN_EMAILS and current_user["level"] != 3:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Admin or Master privileges required."
         )
     return current_user
 
@@ -330,6 +345,47 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
         "level_name": LEVELS[current_user["level"]]
     }
 
+@api_router.put("/me")
+async def update_current_user(update_data: UserUpdate, current_user = Depends(get_current_user)):
+    """Allow users to update their own profile"""
+    update_fields = {}
+    
+    # Update full name if provided
+    if update_data.full_name:
+        update_fields["full_name"] = update_data.full_name
+    
+    # Update password if both current and new passwords are provided
+    if update_data.current_password and update_data.new_password:
+        # Verify current password
+        if not verify_password(update_data.current_password, current_user["password_hash"]):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password is incorrect"
+            )
+        
+        # Set new password
+        update_fields["password_hash"] = get_password_hash(update_data.new_password)
+    
+    if not update_fields:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update"
+        )
+    
+    # Update user in database
+    result = await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": update_fields}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return {"message": "Profile updated successfully"}
+
 # Admin routes
 @api_router.get("/admin/pending-users", response_model=List[PendingApproval])
 async def get_pending_users(admin_user = Depends(get_admin_user)):
@@ -496,8 +552,70 @@ async def get_accessible_works(current_user = Depends(get_current_user)):
     
     return works_by_level
 
-@api_router.delete("/admin/delete-work/{work_id}")
-async def delete_work(work_id: str, admin_user = Depends(get_admin_user)):
+@api_router.get("/work-file/{work_id}")
+async def view_work_file(work_id: str, current_user = Depends(get_current_user)):
+    """Serve PDF file for viewing in browser"""
+    work = await db.work_files.find_one({"id": work_id})
+    if not work:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Work file not found"
+        )
+    
+    # Check access permissions based on hierarchy
+    if current_user["level"] < work["level"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to view this file"
+        )
+    
+    file_path = Path(work["file_path"])
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found on disk"
+        )
+    
+    return FileResponse(
+        path=file_path,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename={work['filename']}"}
+    )
+
+@api_router.get("/download-work/{work_id}")
+async def download_work_file(work_id: str, current_user = Depends(get_current_user)):
+    """Download PDF file"""
+    work = await db.work_files.find_one({"id": work_id})
+    if not work:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Work file not found"
+        )
+    
+    # Check access permissions based on hierarchy
+    if current_user["level"] < work["level"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to download this file"
+        )
+    
+    file_path = Path(work["file_path"])
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found on disk"
+        )
+    
+    return FileResponse(
+        path=file_path,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={work['filename']}"},
+        filename=work["filename"]
+    )
+
+@api_router.delete("/delete-work/{work_id}")
+async def delete_work(work_id: str, current_user = Depends(get_admin_or_master_user)):
+    """Delete work file - Only admin or master level users can delete"""
     work = await db.work_files.find_one({"id": work_id})
     if not work:
         raise HTTPException(
