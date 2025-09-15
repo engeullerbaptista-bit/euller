@@ -162,7 +162,9 @@ async def register_user(user_data: UserCreate):
     del user_dict["password"]
     
     new_user = User(**user_dict)
-    await db.users.insert_one(new_user.dict())
+    user_doc = new_user.dict()
+    user_doc["password_hash"] = hashed_password  # Ensure password_hash is included
+    await db.users.insert_one(user_doc)
     
     # Send notification email to admin
     send_notification_email(user_dict)
