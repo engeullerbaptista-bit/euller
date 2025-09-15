@@ -597,6 +597,18 @@ function Dashboard() {
     }
   };
 
+  const loadUsersWithWorks = async () => {
+    setLoadingUsers(true);
+    try {
+      const response = await axios.get(`${API}/users-with-works?page=${currentPage}&limit=20`);
+      setUsersWithWorks(response.data.users);
+      setTotalPages(response.data.pagination.total_pages);
+    } catch (error) {
+      toast.error('Erro ao carregar usuários e trabalhos');
+    }
+    setLoadingUsers(false);
+  };
+
   const loadPendingUsers = async () => {
     try {
       const response = await axios.get(`${API}/admin/pending-users`);
