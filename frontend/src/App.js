@@ -881,7 +881,7 @@ function Dashboard() {
 
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <Tabs defaultValue="works" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-white/80 border border-amber-200">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 bg-white/80 border border-amber-200 gap-1 p-1">
             <TabsTrigger value="works" className="data-[state=active]:bg-amber-100">
               <FileText className="w-4 h-4 mr-2" />
               Trabalhos
