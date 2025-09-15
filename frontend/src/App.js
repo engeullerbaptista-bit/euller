@@ -24,6 +24,13 @@ import { Eye, Upload, Download, Trash2, Shield, Users, FileText, LogOut, Crown, 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Masonic levels mapping
+const LEVELS = {
+  1: "aprendiz",
+  2: "companheiro", 
+  3: "mestre"
+};
+
 // Auth Context
 const AuthContext = React.createContext();
 
