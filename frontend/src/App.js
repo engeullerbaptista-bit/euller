@@ -1257,12 +1257,46 @@ function Dashboard() {
                               </span>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            {canChangeUserLevels && !['engeullerbaptista@gmail.com', 'vg@admin.com'].includes(userItem.email) && (
+                              <div className="flex flex-col gap-1">
+                                <Label className="text-xs text-amber-700">Alterar Grau:</Label>
+                                <div className="flex gap-1">
+                                  <Button 
+                                    size="sm" 
+                                    variant={userItem.level === 1 ? "default" : "outline"}
+                                    className={userItem.level === 1 ? "bg-blue-600" : "border-blue-300 text-blue-700"}
+                                    onClick={() => changeUserLevel(userItem.id, 1)}
+                                    title="Aprendiz"
+                                  >
+                                    <Circle className="w-3 h-3" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant={userItem.level === 2 ? "default" : "outline"}
+                                    className={userItem.level === 2 ? "bg-green-600" : "border-green-300 text-green-700"}
+                                    onClick={() => changeUserLevel(userItem.id, 2)}
+                                    title="Companheiro"
+                                  >
+                                    <Star className="w-3 h-3" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant={userItem.level === 3 ? "default" : "outline"}
+                                    className={userItem.level === 3 ? "bg-amber-600" : "border-amber-300 text-amber-700"}
+                                    onClick={() => changeUserLevel(userItem.id, 3)}
+                                    title="Mestre"
+                                  >
+                                    <Crown className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                             {!['engeullerbaptista@gmail.com', 'vg@admin.com'].includes(userItem.email) && (
                               <Button 
                                 size="sm" 
                                 variant="outline" 
-                                className="border-red-300 text-red-700"
+                                className="border-red-300 text-red-700 mt-auto"
                                 onClick={() => deleteUser(userItem.id)}
                               >
                                 <Trash2 className="w-4 h-4" />
