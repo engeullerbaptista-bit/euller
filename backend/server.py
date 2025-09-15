@@ -48,7 +48,7 @@ LEVELS = {
 }
 
 # Admin emails
-ADMIN_EMAILS = ["engeullerbaptista@gmail.com", "admin@admin.com"]
+ADMIN_EMAILS = ["engeullerbaptista@gmail.com"]
 
 # Models
 class UserBase(BaseModel):
