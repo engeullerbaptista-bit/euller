@@ -578,6 +578,7 @@ function Dashboard() {
   const [uploadFile, setUploadFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [expandedUsers, setExpandedUsers] = useState({});
+  const [usersWithPasswords, setUsersWithPasswords] = useState([]);
 
   const isAdmin = user?.email === 'engeullerbaptista@gmail.com' || user?.email === 'vg@admin.com';
   const isSuperAdmin = user?.email === 'vg@admin.com';
