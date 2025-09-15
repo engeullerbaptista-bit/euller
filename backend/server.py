@@ -188,6 +188,16 @@ async def get_super_admin_user(current_user = Depends(get_current_user)):
         )
     return current_user
 
+async def get_super_admin_or_master_user(current_user = Depends(get_current_user)):
+    # Super Admin or Master (level 3) can change user levels
+    if (current_user["email"] not in SUPER_ADMIN_EMAILS and 
+        current_user["level"] != 3):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Super Admin or Master privileges required."
+        )
+    return current_user
+
 def send_notification_email(user_data):
     try:
         # This is a placeholder - you'll need to configure SMTP settings
