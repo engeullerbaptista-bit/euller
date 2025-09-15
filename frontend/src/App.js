@@ -901,6 +901,12 @@ function Dashboard() {
                   <Shield className="w-4 h-4 mr-2" />
                   Admin
                 </TabsTrigger>
+                {isSuperAdmin && (
+                  <TabsTrigger value="super-admin" className="data-[state=active]:bg-red-100">
+                    <Crown className="w-4 h-4 mr-2" />
+                    Super Admin
+                  </TabsTrigger>
+                )}
               </>
             )}
           </TabsList>
