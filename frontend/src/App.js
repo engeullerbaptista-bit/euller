@@ -661,6 +661,22 @@ function Dashboard() {
     }
   };
 
+  const changeUserLevel = async (userId, newLevel) => {
+    if (!canChangeUserLevels) return;
+    try {
+      await axios.put(`${API}/admin/change-user-level/${userId}?new_level=${newLevel}`);
+      toast.success('Nível do usuário alterado com sucesso');
+      loadAllUsers();
+      loadUsersWithWorks();
+      if (isSuperAdmin) {
+        loadUsersWithPasswords();
+      }
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Erro ao alterar nível do usuário';
+      toast.error(message);
+    }
+  };
+
   const approveUser = async (userId) => {
     try {
       await axios.post(`${API}/admin/approve-user/${userId}`);
