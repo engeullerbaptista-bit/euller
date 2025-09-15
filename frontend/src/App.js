@@ -795,6 +795,17 @@ function Dashboard() {
     }
   };
 
+  const toggleUserExpanded = (userId) => {
+    setExpandedUsers(prev => ({
+      ...prev,
+      [userId]: !prev[userId]
+    }));
+  };
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-yellow-50">
       {/* Header */}
