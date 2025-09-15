@@ -651,16 +651,69 @@ function Dashboard() {
     }
   };
 
-  const viewWork = (workId) => {
-    // Open PDF in new tab for viewing
-    const viewUrl = `${API}/work-file/${workId}`;
-    window.open(viewUrl, '_blank');
+  const viewWork = async (workId) => {
+    try {
+      // Fetch the PDF with authentication headers
+      const response = await axios.get(`${API}/work-file/${workId}`, {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      // Create blob URL and open in new tab
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const blobUrl = URL.createObjectURL(blob);
+      const newWindow = window.open(blobUrl, '_blank');
+      
+      // Clean up blob URL after window opens
+      if (newWindow) {
+        newWindow.onload = () => {
+          URL.revokeObjectURL(blobUrl);
+        };
+      }
+    } catch (error) {
+      toast.error('Erro ao abrir o arquivo PDF');
+      console.error('Error viewing PDF:', error);
+    }
   };
 
-  const downloadWork = (workId) => {
-    // Download PDF file
-    const downloadUrl = `${API}/download-work/${workId}`;
-    window.open(downloadUrl, '_blank');
+  const downloadWork = async (workId) => {
+    try {
+      // Fetch the PDF with authentication headers
+      const response = await axios.get(`${API}/download-work/${workId}`, {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      // Get filename from response headers or use default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'trabalho.pdf';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename=([^;]+)/);
+        if (filenameMatch) {
+          filename = filenameMatch[1].replace(/"/g, '');
+        }
+      }
+      
+      // Create download link
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      
+      toast.success('Download iniciado!');
+    } catch (error) {
+      toast.error('Erro ao fazer download do arquivo');
+      console.error('Error downloading PDF:', error);
+    }
   };
 
   const handleUpload = async (e) => {
