@@ -191,7 +191,7 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.2;
 }
 
-/* Responsive design helpers */
+/* Mobile Responsive Design */
 @media (max-width: 768px) {
   .responsive-padding {
     padding-left: 1rem;
@@ -200,6 +200,69 @@ h1, h2, h3, h4, h5, h6 {
   
   .responsive-text {
     font-size: 0.9rem;
+  }
+  
+  /* Mobile header adjustments */
+  .mobile-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+  }
+  
+  /* Mobile card adjustments */
+  .mobile-card {
+    margin: 0.5rem;
+    padding: 1rem;
+  }
+  
+  /* Mobile buttons */
+  .mobile-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  
+  /* Mobile tabs */
+  .mobile-tabs {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  
+  /* Mobile form */
+  .mobile-form {
+    padding: 1rem;
+  }
+  
+  /* Smaller text on mobile */
+  .mobile-small-text {
+    font-size: 0.75rem;
+  }
+  
+  /* Mobile pagination */
+  .mobile-pagination {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  
+  /* Hidden on mobile */
+  .mobile-hidden {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra small screens */
+  .mobile-tabs {
+    grid-template-columns: 1fr;
+  }
+  
+  .mobile-extra-small {
+    font-size: 0.7rem;
+  }
+  
+  .mobile-tight-spacing {
+    gap: 0.25rem;
+    padding: 0.5rem;
   }
 }
 
