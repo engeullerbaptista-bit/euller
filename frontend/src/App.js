@@ -362,7 +362,7 @@ function LoginPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="text-amber-700 hover:text-amber-800"
+                    className="text-amber-700 hover:text-amber-800 text-sm"
                     onClick={() => {
                       setIsLogin(!isLogin);
                       resetForm();
@@ -375,7 +375,7 @@ function LoginPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      className="text-amber-600 hover:text-amber-700 flex items-center gap-2"
+                      className="text-amber-600 hover:text-amber-700 flex items-center justify-center gap-2 text-sm"
                       onClick={() => {
                         setIsForgotPassword(true);
                         resetForm();
