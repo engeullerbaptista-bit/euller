@@ -579,7 +579,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [expandedUsers, setExpandedUsers] = useState({});
 
-  const isAdmin = user?.email === 'engeullerbaptista@gmail.com' || user?.email === 'admin@admin.com';
+  const isAdmin = user?.email === 'engeullerbaptista@gmail.com';
   const canDeleteWorks = isAdmin || user?.level === 3; // Admin or Master can delete
 
   useEffect(() => {
