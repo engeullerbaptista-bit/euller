@@ -302,7 +302,7 @@ startxref
         
         hierarchy_tests = [
             {
-                "user_email": "teste@example.com",
+                "user_email": "aprendiz@teste.com",
                 "user_level": 1,
                 "user_role": "Test User (Aprendiz)",
                 "should_access": [1],
