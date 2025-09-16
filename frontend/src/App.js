@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { Toaster } from './components/ui/sonner';
 
 // Icons
-import { Eye, Upload, Download, Trash2, Shield, Users, FileText, LogOut, Crown, Star, Circle, KeyRound, Edit, User, ExternalLink } from 'lucide-react';
+import { Eye, Upload, Download, Trash2, Shield, Users, FileText, LogOut, Crown, Star, Circle, KeyRound, Edit, User } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
