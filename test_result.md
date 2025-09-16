@@ -101,3 +101,35 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Remove PDF visualization functionality from the Masonic website while keeping PDF download functionality intact"
+
+frontend:
+  - task: "Remove PDF visualization functionality"
+    implemented: false
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Starting implementation to remove PDF viewing buttons, viewWork function, and auto-view after upload while preserving download functionality"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 0
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Remove PDF visualization functionality"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "User requested to remove PDF visualization while keeping download. Will remove: viewWork function, 'Ver' button, auto-view after upload, and ExternalLink icon. Will preserve: downloadWork function, 'Baixar' button, and all download functionality."
