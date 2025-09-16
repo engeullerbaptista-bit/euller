@@ -290,6 +290,9 @@ startxref
                     if not success and ('403' in str(response) or 'permission' in str(response).lower()):
                         self.log_test(f"Download block L{work_level} - {user_role}", True, 
                                     "- Correctly blocked download")
+                    elif hasattr(response, 'status_code') and response.status_code == 403:
+                        self.log_test(f"Download block L{work_level} - {user_role}", True, 
+                                    "- Correctly blocked download")
                     else:
                         self.log_test(f"Download block L{work_level} - {user_role}", False, 
                                     f"- Should be blocked but got: {response}")
