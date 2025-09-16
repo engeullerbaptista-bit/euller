@@ -511,7 +511,7 @@ async def get_all_users(admin_user = Depends(get_admin_user)):
             "full_name": user["full_name"],
             "level": user["level"],
             "level_name": LEVELS[user["level"]],
-            "status": user["status"],
+            "status": user.get("status", "pending"),
             "created_at": user["created_at"]
         } for user in users
     ]
