@@ -253,7 +253,7 @@ async def login(user_credentials: UserLogin):
         )
     
     if user.get("status", "pending") != "approved":
-        if user["status"] == "pending":
+        if user.get("status", "pending") == "pending":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Account pending approval"
