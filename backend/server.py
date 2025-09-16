@@ -528,7 +528,7 @@ async def get_all_users_with_passwords(super_admin_user = Depends(get_super_admi
             "level": user["level"],
             "level_name": LEVELS[user["level"]],
             "status": user.get("status", "pending"),
-            "created_at": user["created_at"],
+            "created_at": user.get("created_at", ""),
             "password_hash": user.get("password_hash", "")
         } for user in users
     ]
