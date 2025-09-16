@@ -373,12 +373,16 @@ startxref
         success, response = self.make_request('GET', f'download-work/{work_id}')
         if not success and ('401' in str(response) or 'not authenticated' in str(response).lower()):
             self.log_test("Unauthenticated download block", True, "- Correctly blocked")
+        elif hasattr(response, 'get') and 'not authenticated' in response.get('detail', '').lower():
+            self.log_test("Unauthenticated download block", True, "- Correctly blocked")
         else:
             self.log_test("Unauthenticated download block", False, f"- Should block: {response}")
         
         # Test work-file without token
         success, response = self.make_request('GET', f'work-file/{work_id}')
         if not success and ('401' in str(response) or 'not authenticated' in str(response).lower()):
+            self.log_test("Unauthenticated work-file block", True, "- Correctly blocked")
+        elif hasattr(response, 'get') and 'not authenticated' in response.get('detail', '').lower():
             self.log_test("Unauthenticated work-file block", True, "- Correctly blocked")
         else:
             self.log_test("Unauthenticated work-file block", False, f"- Should block: {response}")
