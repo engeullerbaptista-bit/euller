@@ -252,7 +252,7 @@ async def login(user_credentials: UserLogin):
             detail="Incorrect email or password"
         )
     
-    if user["status"] != "approved":
+    if user.get("status", "pending") != "approved":
         if user["status"] == "pending":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
