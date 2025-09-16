@@ -106,16 +106,19 @@ user_problem_statement: "Remove PDF visualization functionality from the Masonic
 
 frontend:
   - task: "Remove PDF visualization functionality"
-    implemented: false
-    working: "NA"
+    implemented: true
+    working: true
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Starting implementation to remove PDF viewing buttons, viewWork function, and auto-view after upload while preserving download functionality"
+      - working: true
+        agent: "main"
+        comment: "Successfully implemented - removed viewWork function, 'Ver' button, ExternalLink icon, and auto-view after upload. Verified 0 'Ver' buttons and 1+ 'Baixar' buttons present. Download functionality preserved."
 
 metadata:
   created_by: "main_agent"
