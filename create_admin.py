@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import asyncio
-import hashlib
+from passlib.context import CryptContext
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from dotenv import load_dotenv
@@ -11,6 +11,12 @@ import uuid
 load_dotenv('backend/.env')
 mongo_url = os.getenv('MONGO_URL')
 
+# Password hashing - same as backend
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
 async def create_admin():
     client = AsyncIOMotorClient(mongo_url)
     db = client.restricted_site
@@ -18,9 +24,9 @@ async def create_admin():
     # Create super admin user
     admin_data = {
         "id": str(uuid.uuid4()),
-        "name": "Super Admin",
+        "full_name": "Super Admin",
         "email": "vg@admin.com",
-        "password": hashlib.sha256("admin123".encode()).hexdigest(),
+        "password_hash": get_password_hash("admin123"),
         "level": 3,
         "is_admin": True,
         "is_super_admin": True,
@@ -30,13 +36,19 @@ async def create_admin():
     # Check if user already exists
     existing = await db.users.find_one({"email": "vg@admin.com"})
     if existing:
-        print("Usuário admin já existe")
-        # Update to ensure admin privileges
+        print("Usuário admin já existe - atualizando senha e privilégios")
+        # Update password and ensure admin privileges
         await db.users.update_one(
             {"email": "vg@admin.com"},
-            {"$set": {"is_admin": True, "is_super_admin": True, "approved": True, "level": 3}}
+            {"$set": {
+                "password_hash": get_password_hash("admin123"),
+                "is_admin": True, 
+                "is_super_admin": True, 
+                "approved": True, 
+                "level": 3
+            }}
         )
-        print("Privilégios de admin atualizados")
+        print("Usuário admin atualizado com sucesso")
     else:
         await db.users.insert_one(admin_data)
         print("Usuário admin criado com sucesso")
@@ -44,9 +56,9 @@ async def create_admin():
     # Create a test user with some works
     test_user_data = {
         "id": str(uuid.uuid4()),
-        "name": "Usuário Teste",
+        "full_name": "Usuário Teste",
         "email": "teste@example.com",
-        "password": hashlib.sha256("teste123".encode()).hexdigest(),
+        "password_hash": get_password_hash("teste123"),
         "level": 1,
         "is_admin": False,
         "is_super_admin": False,
@@ -69,6 +81,8 @@ async def create_admin():
         }
         await db.works.insert_one(work_data)
         print("Trabalho de teste criado")
+    else:
+        print("Usuário teste já existe")
     
     client.close()
     print("Concluído!")
