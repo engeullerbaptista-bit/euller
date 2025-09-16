@@ -72,9 +72,9 @@ class PDFDownloadTester:
                 "expected_level": 3
             },
             {
-                "email": "teste@example.com", 
+                "email": "aprendiz@teste.com", 
                 "password": "teste123",
-                "role": "Test User",
+                "role": "Test User (Aprendiz)",
                 "expected_level": 1
             }
         ]
