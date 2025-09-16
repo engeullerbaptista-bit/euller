@@ -724,33 +724,6 @@ function Dashboard() {
     }
   };
 
-  const viewWork = async (workId) => {
-    try {
-      // Fetch the PDF with authentication headers
-      const response = await axios.get(`${API}/work-file/${workId}`, {
-        responseType: 'blob',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      // Create blob URL and open in new tab
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const blobUrl = URL.createObjectURL(blob);
-      const newWindow = window.open(blobUrl, '_blank');
-      
-      // Clean up blob URL after window opens
-      if (newWindow) {
-        newWindow.onload = () => {
-          URL.revokeObjectURL(blobUrl);
-        };
-      }
-    } catch (error) {
-      toast.error('Erro ao abrir o arquivo PDF');
-      console.error('Error viewing PDF:', error);
-    }
-  };
-
   const downloadWork = async (workId) => {
     try {
       // Fetch the PDF with authentication headers
