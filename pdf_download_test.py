@@ -352,6 +352,9 @@ startxref
                     if not success and ('403' in str(response) or 'permission' in str(response).lower()):
                         self.log_test(f"Hierarchy block L{level} - {test_case['user_role']}", True, 
                                     f"- Correctly blocked access")
+                    elif hasattr(response, 'status_code') and response.status_code == 403:
+                        self.log_test(f"Hierarchy block L{level} - {test_case['user_role']}", True, 
+                                    f"- Correctly blocked access")
                     else:
                         self.log_test(f"Hierarchy block L{level} - {test_case['user_role']}", False, 
                                     f"- Should block access: {response}")
