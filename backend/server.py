@@ -156,7 +156,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except jwt.PyJWTError:
         raise credentials_exception
     
-    user = await db.users.find_one({"email": email, "status": "approved"})
+    user = await db.users.find_one({"email": email, "$or": [{"status": "approved"}, {"status": {"$exists": False}}]})
     if user is None:
         raise credentials_exception
     return user
