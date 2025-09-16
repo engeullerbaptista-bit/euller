@@ -73,7 +73,7 @@ class PDFDownloadTester:
             },
             {
                 "email": "aprendiz@teste.com", 
-                "password": "teste123",
+                "password": "123456",
                 "role": "Test User (Aprendiz)",
                 "expected_level": 1
             }
