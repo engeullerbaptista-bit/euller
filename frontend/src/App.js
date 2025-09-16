@@ -786,13 +786,6 @@ function Dashboard() {
       setUploadLevel('');
       loadWorks();
       loadUsersWithWorks();
-      
-      // Show uploaded work immediately if file_id is returned
-      if (response.data.file_id) {
-        setTimeout(() => {
-          viewWork(response.data.file_id);
-        }, 1000);
-      }
     } catch (error) {
       const message = error.response?.data?.detail || 'Erro ao enviar trabalho';
       toast.error(message);
