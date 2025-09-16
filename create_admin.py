@@ -19,7 +19,7 @@ def get_password_hash(password):
 
 async def create_admin():
     client = AsyncIOMotorClient(mongo_url)
-    db = client.restricted_site
+    db = client[os.getenv('DB_NAME')]
     
     # Create super admin user
     admin_data = {
