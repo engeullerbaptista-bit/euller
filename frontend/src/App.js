@@ -966,15 +966,6 @@ function Dashboard() {
                                         size="sm" 
                                         variant="outline" 
                                         className="border-amber-300 text-amber-700 text-xs sm:text-sm"
-                                        onClick={() => viewWork(work.id)}
-                                      >
-                                        <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                        Ver
-                                      </Button>
-                                      <Button 
-                                        size="sm" 
-                                        variant="outline" 
-                                        className="border-amber-300 text-amber-700 text-xs sm:text-sm"
                                         onClick={() => downloadWork(work.id)}
                                       >
                                         <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
