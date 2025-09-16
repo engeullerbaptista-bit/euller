@@ -172,8 +172,9 @@ startxref
             files = {'file': (f'test_level_{file_info["level"]}.pdf', dummy_pdf_content, 'application/pdf')}
             data = {'title': file_info['title']}
             
-            success, response = self.make_request('POST', f'upload-work/{file_info["level"]}', 
-                                                data=data, files=files, token=admin_token)
+            # Upload with title as query parameter
+            success, response = self.make_request('POST', f'upload-work/{file_info["level"]}?title={file_info["title"]}', 
+                                                data=None, files=files, token=admin_token)
             
             if success and 'file_id' in response:
                 file_id = response['file_id']
